@@ -1,0 +1,509 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f6f7f4;
+    margin: 0;
+    padding: 40px 20px;
+    color: #333;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    color: #4f6258;
+    font-size: 46px;
+    margin: 0 0 8px 0;
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #777;
+    font-size: 16px;
+    margin: 0 0 35px 0;
+}
+
+.schedule-box,
+.checklist-box {
+    background-color: white;
+    padding: 30px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e8ebe8;
+}
+
+h2 {
+    color: #4f6258;
+    margin-top: 0;
+    margin-bottom: 22px;
+    font-size: 22px;
+}
+
+h3 {
+    margin-top: 28px;
+    margin-bottom: 12px;
+    color: #4f6258;
+    font-size: 17px;
+}
+
+.schedule-box label {
+    display: block;
+    margin-top: 18px;
+    margin-bottom: 7px;
+    font-weight: 600;
+    color: #555;
+    font-size: 14px;
+}
+
+select,
+input[type="text"] {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid #d7dcd8;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 15px;
+    background-color: #fff;
+    color: #333;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+select:focus,
+input[type="text"]:focus {
+    border-color: #7d998b;
+    box-shadow: 0 0 0 3px rgba(125, 153, 139, 0.12);
+}
+
+button {
+    margin-top: 15px;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 8px;
+    background-color: #4f6258;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+button:hover {
+    background-color: #3f5047;
+    transform: translateY(-1px);
+}
+
+#addSubject {
+    background-color: #6f8f80;
+}
+
+#addSubject:hover {
+    background-color: #5d796b;
+}
+
+#generate {
+    width: 100%;
+    margin-top: 25px;
+    padding: 14px 20px;
+    background-color: #4f6258;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    border-radius: 9px;
+    border: none;
+    box-shadow: 0 3px 8px rgba(79, 98, 88, 0.18);
+}
+
+#generate:hover {
+    background-color: #3f5047;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(79, 98, 88, 0.22);
+}
+
+#generate:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(79, 98, 88, 0.15);
+}
+
+#saveSchedule {
+    background-color: #eef3ef;
+    color: #4f6258;
+    border: 1px solid #d5ddd7;
+}
+
+#saveSchedule:hover {
+    background-color: #e3ebe5;
+    color: #3f5047;
+}
+
+#clearSchedule {
+    background-color: #ffffff;
+    color: #a65353;
+    border: 1px solid #e2caca;
+}
+
+#clearSchedule:hover {
+    background-color: #faf1f1;
+    color: #8f4444;
+}
+
+ul {
+    padding-left: 0;
+}
+
+#subjectList li {
+    list-style: none;
+    background-color: #f8faf8;
+    padding: 13px 15px;
+    margin: 8px 0;
+    border: 1px solid #e1e6e2;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #3f4b44;
+    min-height: 20px;
+    line-height: 20px;
+    transition: 0.2s ease;
+}
+
+#subjectList li:hover {
+    background-color: #f1f5f2;
+    border-color: #cfd8d2;
+}
+
+
+.delete-btn {
+    float: right;
+    margin: 0;
+    padding: 5px 8px;
+    background-color: #b85c5c;
+    color: white;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+.delete-btn:hover {
+    background-color: #9f4d4d;
+    transform: none;
+}
+
+#checklist li {
+    list-style: none;
+    background-color: #ffffff;
+    padding: 14px 15px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid #e1e6e2;
+    display: flex;
+    align-items: center;
+    transition: 0.2s ease;
+}
+
+#checklist li:hover {
+    background-color: #f7f9f7;
+    border-color: #cfd8d2;
+}
+
+#checklist input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+    accent-color: #6f8f80;
+}
+
+#checklist label {
+    margin: 0;
+    font-weight: normal;
+    color: #3f4742;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+#checklist input[type="checkbox"]:checked + label {
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 25px 15px;
+    }
+
+    h1 {
+        font-size: 38px;
+    }
+
+    .subtitle {
+        font-size: 15px;
+    }
+
+    .schedule-box,
+    .checklist-box {
+        padding: 22px;
+        border-radius: 14px;
+    }
+
+    button {
+        font-size: 14px;
+        padding: 11px 16px;
+    }
+}
+/* SCHEDULE ACTIONS */
+
+.schedule-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.schedule-actions button {
+    flex: 1;
+}
+
+@media (max-width: 600px) {
+
+    .schedule-actions {
+        flex-direction: column;
+        gap: 0;
+    }
+
+}
+/* PROFESSIONAL BRAND HEADER */
+
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.brand-icon {
+    width: 46px;
+    height: 46px;
+    background-color: #4f6258;
+    color: white;
+    border-radius: 9px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.brand h1 {
+    text-align: left;
+    color: #4f6258;
+    font-size: 38px;
+    margin: 0;
+    letter-spacing: 0;
+}
+
+.brand p {
+    color: #7a827d;
+    font-size: 13px;
+    margin: 2px 0 0 0;
+}
+
+.brand + .subtitle {
+    margin-top: 15px;
+}
+/* SUBJECTS HEADER */
+
+/* SUBJECTS HEADER */
+
+.subjects-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 30px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e5e9e6;
+}
+
+.subjects-header h3 {
+    margin: 0;
+    color: #4f6258;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+#selectedDay {
+    font-size: 13px;
+    color: #5f7167;
+    background-color: #f1f5f2;
+    border: 1px solid #dfe6e1;
+    padding: 6px 11px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+/* ADD SUBJECT */
+
+/* BUTTON COLORS */
+
+#addSubject {
+    background-color: #d9e4dd;
+    color: #405449;
+    border: 1px solid #bdcdc3;
+}
+
+#addSubject:hover {
+    background-color: #cbdacf;
+    color: #35483e;
+}
+
+
+/* GENERATE */
+
+#generate {
+    background-color: #d0ddd5;
+    color: #3d5146;
+    border: 1px solid #b8c9be;
+    box-shadow: 0 3px 8px rgba(79, 98, 88, 0.12);
+}
+
+#generate:hover {
+    background-color: #c3d2c8;
+    color: #33453b;
+    box-shadow: 0 5px 12px rgba(79, 98, 88, 0.16);
+}
+
+
+/* SAVE */
+
+#saveSchedule {
+    background-color: #d9e4dd;
+    color: #405449;
+    border: 1px solid #bdcdc3;
+}
+
+#saveSchedule:hover {
+    background-color: #cbdacf;
+    color: #35483e;
+}
+
+
+/* CLEAR */
+
+#clearSchedule {
+    background-color: #f4e4e4;
+    color: #9b5050;
+    border: 1px solid #dcbebe;
+}
+
+#clearSchedule:hover {
+    background-color: #ead6d6;
+    color: #873f3f;
+}
+/* INPUT FIELDS */
+
+select,
+input[type="text"] {
+    background-color: #f8faf8;
+    border: 1px solid #cbd6cf;
+    color: #3f4b44;
+    border-radius: 9px;
+    padding: 13px 14px;
+    font-size: 15px;
+    transition: 0.2s ease;
+}
+
+select:hover,
+input[type="text"]:hover {
+    border-color: #aebfb4;
+    background-color: #f4f7f5;
+}
+
+select:focus,
+input[type="text"]:focus {
+    border-color: #7d998b;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(125, 153, 139, 0.12);
+    outline: none;
+}
+
+input[type="text"]::placeholder {
+    color: #8a938e;
+}
+/* CHECKLIST RESULT */
+
+.checklist-box {
+    border-top: 4px solid #6f8f80;
+}
+
+.checklist-box h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    color: #405449;
+}
+
+#checklist {
+    margin: 0;
+}
+
+#checklist li {
+    background-color: #f8faf8;
+    border: 1px solid #dfe6e1;
+}
+
+#checklist li:hover {
+    background-color: #f1f5f2;
+    border-color: #cbd6cf;
+}
+/* STATUS MESSAGE */
+
+#statusMessage {
+    display: none;
+    margin: 0 0 15px 0;
+    padding: 10px 13px;
+    background-color: #e4eee7;
+    border: 1px solid #c8d8cd;
+    border-radius: 8px;
+    color: #496052;
+    font-size: 14px;
+    font-weight: 600;
+}
+/* SCHEDULE TYPE */
+
+.schedule-type {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.schedule-type label {
+    flex: 1;
+    margin: 0 !important;
+    padding: 12px 15px;
+    background-color: #f8faf8;
+    border: 1px solid #cbd6cf;
+    border-radius: 9px;
+    color: #4f6258;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.2s ease;
+}
+
+.schedule-type label:hover {
+    background-color: #f1f5f2;
+    border-color: #aebfb4;
+}
+
+.schedule-type input[type="radio"] {
+    margin-right: 7px;
+    accent-color: #6f8f80;
+}

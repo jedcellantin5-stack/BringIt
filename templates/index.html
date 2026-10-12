@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BringIt</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="brand">
+            <div class="brand-icon">B</div>
+
+            <div>
+                <h1>BringIt</h1>
+                <p>Smart School Checklist</p>
+            </div>
+        </div>
+
+        <p class="subtitle">
+            Know what to bring based on your class schedule.
+        </p>
+
+
+        <div class="schedule-box">
+
+            <h2>My Schedule</h2>
+
+
+            <label>Schedule Setup</label>
+
+            <div class="schedule-type">
+
+                <label>
+                    <input type="radio" name="scheduleType" value="week" checked>
+                    Whole Week
+                </label>
+
+                <label>
+                    <input type="radio" name="scheduleType" value="day">
+                    Per Day
+                </label>
+
+            </div>
+
+
+           <div id="daySelector">
+
+    <label for="day">Day</label>
+
+    <select id="day">
+        <option value="Monday">Monday</option>
+        <option value="Tuesday">Tuesday</option>
+        <option value="Wednesday">Wednesday</option>
+        <option value="Thursday">Thursday</option>
+        <option value="Friday">Friday</option>
+    </select>
+
+</div>
+
+
+<div id="weekSelector">
+
+    <div class="week-day">
+        <label for="mondaySubject">Monday</label>
+        <input
+            type="text"
+            id="mondaySubject"
+            placeholder="Example: Programming"
+        >
+    </div>
+
+    <div class="week-day">
+        <label for="tuesdaySubject">Tuesday</label>
+        <input
+            type="text"
+            id="tuesdaySubject"
+            placeholder="Example: Networking"
+        >
+    </div>
+
+    <div class="week-day">
+        <label for="wednesdaySubject">Wednesday</label>
+        <input
+            type="text"
+            id="wednesdaySubject"
+            placeholder="Example: PE"
+        >
+    </div>
+
+    <div class="week-day">
+        <label for="thursdaySubject">Thursday</label>
+        <input
+            type="text"
+            id="thursdaySubject"
+            placeholder="Example: Database"
+        >
+    </div>
+
+    <div class="week-day">
+        <label for="fridaySubject">Friday</label>
+        <input
+            type="text"
+            id="fridaySubject"
+            placeholder="Example: Programming"
+        >
+    </div>
+
+</div>
+
+
+            <label for="subject">Subject</label>
+
+            <input
+                type="text"
+                id="subject"
+                placeholder="Example: Programming"
+            >
+
+
+            <button id="addSubject">
+                + Add Subject
+            </button>
+
+
+            <div class="subjects-header">
+                <h3>Subjects</h3>
+                <span id="selectedDay">Monday</span>
+            </div>
+
+
+            <ul id="subjectList"></ul>
+
+
+            <button id="generate">
+                Generate Things to Bring
+            </button>
+
+
+            <div class="schedule-actions">
+
+                <button id="saveSchedule">
+                    Save Schedule
+                </button>
+
+                <button id="clearSchedule">
+                    Clear Schedule
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="checklist-box">
+
+            <h2>Things to Bring Today</h2>
+
+            <ul id="checklist">
+                <li>Select your subjects first.</li>
+            </ul>
+
+        </div>
+
+    </div>
+
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>
