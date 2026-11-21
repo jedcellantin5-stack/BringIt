@@ -75,6 +75,8 @@ input[type=file]{width:100%;font:400 14px var(--bd);color:var(--ink)}
 .sug{border:1px dashed var(--brand);background:none;color:var(--brand);border-radius:99px;padding:5px 11px;font:500 13px var(--bd);cursor:pointer}
 .sug:hover{background:var(--chip)}
 .pick{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--soft);max-height:220px;overflow:auto}
+input[type=date]{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font:400 15px var(--bd)}
+.exrow{padding:10px 0;border-bottom:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -84,9 +86,10 @@ input[type=file]{width:100%;font:400 14px var(--bd);color:var(--ink)}
   <div id="authbox"></div>
   <div id="appwrap" style="display:none">
     <div id="sync" role="status"></div>
-    <nav role="tablist">
+   <nav role="tablist">
       <button role="tab" data-tab="pack">Pack</button>
       <button role="tab" data-tab="sched">Schedule</button>
+      <button role="tab" data-tab="exams">Exams</button>
       <button role="tab" data-tab="items">Items</button>
     </nav>
     <main id="app"></main>
@@ -559,6 +562,271 @@ function drawSignUp(){
 sb.auth.onAuthStateChange((_event,session)=>showAuth(session?session.user:null));
 sb.auth.getSession().then(({data})=>showAuth(data.session?data.session.user:null));
 render();
+</script>
+<script>
+(function(){
+const MONTHS=["january","february","march","april","may","june","july","august","september","october","november","december"];
+const ESS=["School ID","Exam permit","Black or blue pen","Pencil","Eraser","Calculator","Water bottle"];
+let EXSCAN=null,EXDATE="",exMsg="",LAST=null,FOUND=[],META={};
+const ex=()=>S.exams||(S.exams=[]);
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const nice=s=>{try{return new Date(s+"T00:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}catch(e){return s}};
+const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,"");
+const mins=t=>{const m=/(\d{1,2}):(\d{2})/.exec(t||"");if(!m)return 9999;let h=+m[1];if(h<7)h+=12;return h*60+ +m[2]};
+const byTime=(a,b)=>mins(a.time)-mins(b.time);
+const secNow=()=>String(S.section||META.section||"").trim();
+const val=id=>{const e=document.getElementById(id);return e?e.value.trim():""};
+
+function wordsOf(data){
+  let w=data.words;
+  if(!w&&data.blocks)w=data.blocks.flatMap(b=>b.paragraphs.flatMap(p=>p.lines.flatMap(l=>l.words)));
+  return (w||[]).filter(x=>x.text&&x.text.trim()&&x.bbox);
+}
+function findDate(text){
+  const m=String(text).match(/(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\s*,?\s*(\d{4})/i);
+  if(!m)return "";
+  return m[3]+"-"+pad(MONTHS.indexOf(m[1].toLowerCase())+1)+"-"+pad(+m[2]);
+}
+function parseExam(data,section){
+  const words=wordsOf(data);
+  const out={date:"",rows:[],sections:[]};
+  if(!words.length)return out;
+  out.date=findDate(data.text||"")||findDate(words.map(w=>w.text).join(" "));
+  const cx=w=>(w.bbox.x0+w.bbox.x1)/2,cy=w=>(w.bbox.y0+w.bbox.y1)/2,hh=w=>Math.max(1,w.bbox.y1-w.bbox.y0);
+  const minX=Math.min(...words.map(w=>w.bbox.x0)),maxX=Math.max(...words.map(w=>w.bbox.x1));
+  const lineUp=(arr,tol)=>{
+    const s=arr.slice().sort((a,b)=>cy(a)-cy(b)||a.bbox.x0-b.bbox.x0),ls=[];let c=null;
+    s.forEach(w=>{
+      if(c&&Math.abs(cy(w)-c.cy)<hh(w)*tol){c.ws.push(w);c.cy=c.ws.reduce((a,x)=>a+cy(x),0)/c.ws.length}
+      else{c={ws:[w],cy:cy(w)};ls.push(c)}
+    });
+    ls.forEach(l=>l.ws.sort((a,b)=>a.bbox.x0-b.bbox.x0));
+    return ls;
+  };
+  const times=[];
+  lineUp(words.filter(w=>w.bbox.x0<minX+0.14*(maxX-minX)),0.7).forEach(l=>{
+    const m=l.ws.map(w=>w.text).join(" ").match(/(\d{1,2})\s*[:.]\s*(\d{2})\s*[-–—~]\s*(\d{1,2})\s*[:.]\s*(\d{2})/);
+    if(m)times.push({cy:l.cy,label:m[1]+":"+m[2]+"-"+m[3]+":"+m[4]});
+  });
+  const anchors=[],found={};
+  lineUp(words,0.6).forEach(l=>{
+    l.ws.forEach((w,i)=>{
+      const nx=l.ws[i+1];
+      anchors.push({n:norm(w.text),t:w.text,x0:w.bbox.x0,x1:w.bbox.x1,cy:cy(w),h:hh(w)});
+      if(nx&&nx.bbox.x0-w.bbox.x1<hh(w)*1.5)anchors.push({n:norm(w.text+nx.text),t:w.text+" "+nx.text,x0:w.bbox.x0,x1:nx.bbox.x1,cy:(cy(w)+cy(nx))/2,h:(hh(w)+hh(nx))/2,pair:true});
+    });
+  });
+  anchors.forEach(a=>{a.cx=(a.x0+a.x1)/2;a.w=a.x1-a.x0});
+  anchors.forEach(a=>{
+    if(!a.pair){const t=a.t.replace(/[^A-Za-z0-9-]/g,"");if(/^[A-Za-z]{2,}-[A-Za-z]*\d+$/.test(t))found[t]=1}
+    else{const p=a.t.split(" ");if(/tech/i.test(p[0])&&/^[A-Za-z]*\d+$/.test(p[1]||""))found[a.t]=1}
+  });
+  out.sections=Object.keys(found);
+  const lab=norm(section||"");
+  if(!lab||!/\d/.test(lab))return out;
+  const hits=anchors.filter(a=>a.n===lab||(lab.length>=4&&a.n.length>lab.length&&a.n.endsWith(lab)));
+  hits.sort((a,b)=>b.n.length-a.n.length);
+  const kept=[];
+  hits.forEach(a=>{if(!kept.some(k=>Math.abs(k.cy-a.cy)<Math.max(k.h,a.h)&&Math.abs(k.cx-a.cx)<(k.w+a.w)/2))kept.push(a)});
+  kept.sort((a,b)=>a.cy-b.cy);
+  const first=times[0];
+  const pitch=times.length>1&&times[1].cy-times[0].cy>0?times[1].cy-times[0].cy:0;
+  kept.forEach(m=>{
+    const tol=m.w*0.95+m.h*0.9;
+    const near=w=>Math.abs(cx(w)-m.cx)<tol;
+    const pick=arr=>arr.sort((a,b)=>a.bbox.x0-b.bbox.x0).map(w=>w.text).join(" ").replace(/[|]/g,"").trim();
+    const subject=pick(words.filter(w=>near(w)&&cy(w)<m.cy-m.h*0.6&&cy(w)>m.cy-m.h*2.2));
+    const teacher=pick(words.filter(w=>near(w)&&cy(w)>m.cy+m.h*0.6&&cy(w)<m.cy+m.h*2.1));
+    let room="";
+    if(first&&pitch)room=pick(words.filter(w=>near(w)&&cy(w)<first.cy-pitch*0.55&&cy(w)>first.cy-pitch*1.05));
+    let time="",best=1e9;
+    times.forEach(t=>{const d=Math.abs(t.cy-m.cy);if(d<best){best=d;time=t.label}});
+    out.rows.push({time,subject,room,teacher,section:m.t});
+  });
+  return out;
+}
+
+async function ocr(file,say){
+  if(!window.Tesseract)throw new Error("Tesseract not loaded");
+  say("Preparing the picture…");
+  const img=await prepImage(file);
+  say("Starting… the first scan downloads some data, so it can take a bit.");
+  let worker;
+  try{
+    worker=await Tesseract.createWorker("eng",1,{logger:m=>{if(m.status==="recognizing text")say("Reading… "+Math.round(m.progress*100)+"%")}});
+    await worker.setParameters({tessedit_pageseg_mode:"11"});
+    const res=await worker.recognize(img,{},{blocks:true});
+    return res.data;
+  }finally{if(worker){try{await worker.terminate()}catch(_){}}}
+}
+function examFromData(){
+  const sec=secNow();
+  const r=parseExam(LAST,sec);
+  FOUND=r.sections;
+  EXDATE=r.date||EXDATE||iso(new Date());
+  if(!sec||!/\d/.test(sec)){
+    EXSCAN=null;
+    exMsg="I read the exam schedule. Type your full section, with the number (for example BSIT-FBT4)"+(FOUND.length?" or tap it below":"")+", so I can pick only your subjects.";
+  }else if(r.rows.length){
+    EXSCAN=r.rows;
+    exMsg="Found "+r.rows.length+" exam"+(r.rows.length>1?"s":"")+" for "+sec+". Please check the details below.";
+  }else{
+    EXSCAN=null;
+    exMsg="I couldn’t find section "+sec+" in this picture. "+(FOUND.length?"Tap your section below.":"Try a clearer picture, or add your exams by hand below.");
+  }
+}
+async function runExam(file){
+  if(!file)return;
+  const say=t=>{exMsg=t;const m=document.getElementById("ex-msg");if(m)m.textContent=t};
+  EXSCAN=null;
+  try{
+    const sec=val("ex-section");
+    if(sec&&sec!==S.section){S.section=sec;save()}
+    LAST=await ocr(file,say);
+    examFromData();
+  }catch(e){console.error(e);exMsg="Couldn’t read the picture. Check your internet and try again."}
+  render();
+}
+window.runScan=async function(file){
+  if(!file)return;
+  const say=t=>{scanMsg=t;const m=document.getElementById("scan-msg");if(m)m.textContent=t};
+  SCAN=null;
+  try{
+    const data=await ocr(file,say);
+    const txt=data.text||"";
+    if(/examinat/i.test(txt)||(/\bexam/i.test(txt)&&findDate(txt))){
+      LAST=data;scanMsg="";S.tab="exams";examFromData();save();render();window.scrollTo(0,0);return;
+    }
+    const parsed=parseSchedule(data);
+    const n=DAYS.reduce((a,d)=>a+parsed[d].length,0);
+    if(n){SCAN=parsed;scanMsg="Done! Please check the result below."}
+    else{
+      const raw=txt.replace(/\s+/g," ").trim().slice(0,200);
+      scanMsg="I couldn’t find any classes. What I read: "+(raw||"(nothing)");
+    }
+    render();
+  }catch(e){
+    console.error(e);
+    say("Couldn’t read the picture. Check your internet and try again.");
+  }
+};
+
+function exReview(){
+  return `<div class="dayblock"><h3>Check and fix the result</h3><div class="row"><label style="align-self:center;font-weight:600">Date</label><input type="date" id="ex-date" value="${esc(EXDATE)}"></div>${EXSCAN.map((r,i)=>`<div class="exrow"><label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" id="exr-${i}-on" checked> Include this exam</label><div class="row"><input type="text" id="exr-${i}-subject" value="${esc(r.subject)}" placeholder="Subject"></div><div class="row"><input type="text" id="exr-${i}-time" value="${esc(r.time)}" placeholder="Time"><input type="text" id="exr-${i}-room" value="${esc(r.room)}" placeholder="Room"></div></div>`).join("")}<div class="row"><button class="btn" data-exapply="1">Add to my exams</button><button class="btn ghost" data-excancel="1">Cancel</button></div></div>`;
+}
+function examList(){
+  const list=ex().slice().sort((a,b)=>a.date===b.date?byTime(a,b):a.date<b.date?-1:1);
+  if(!list.length)return `<div class="card"><h2>My exams</h2><p class="muted">No exams yet. Scan your exam schedule above or add one below.</p></div>`;
+  const dates=[...new Set(list.map(x=>x.date))];
+  let h=`<div class="card"><h2>My exams</h2><p class="muted">${list.length} exam${list.length>1?"s":""} on ${dates.length} day${dates.length>1?"s":""}.</p>`;
+  dates.forEach(d=>{
+    h+=`<div class="dayblock"><h3>${esc(nice(d))}</h3><ul>${list.filter(x=>x.date===d).map(x=>`<li class="li"><span><b>${esc(x.subject)}</b><br><span class="muted">${esc(x.time||"")}${x.room?" · "+(/^\d+$/.test(x.room)?"Room ":"")+esc(x.room):""}${x.teacher?" · "+esc(x.teacher):""}</span></span><button class="x" data-exdel="${esc(x.id)}" aria-label="Remove ${esc(x.subject)}">✕</button></li>`).join("")}</ul></div>`;
+  });
+  return h+`</div>`;
+}
+function manualCard(){
+  return `<div class="card"><h3>Add an exam by hand</h3><div class="row"><input type="date" id="ex-md" value="${esc(iso(new Date()))}"><input type="text" id="ex-mt" placeholder="Time, e.g. 8:00-9:00"></div><div class="row"><input type="text" id="ex-ms" placeholder="Subject"><input type="text" id="ex-mr" placeholder="Room"></div><div class="row"><button class="btn" data-exadd="1">Add exam</button></div></div>`;
+}
+function examsTab(){
+  const chips=FOUND.length?`<div class="muted" style="margin-top:8px">Sections I found. Tap yours:</div><div class="chips">${FOUND.map(s=>`<button class="sug" data-exsec="${esc(s)}">${esc(s)}</button>`).join("")}</div>`:"";
+  return `<div class="card"><h2>Scan exam schedule</h2><p class="muted">Upload a picture of the exam schedule. I will pick only the exams of your section. The picture is read on your device and is not uploaded anywhere.</p><div class="row"><input type="text" id="ex-section" placeholder="My section, e.g. BSIT-FBT4" value="${esc(secNow())}" autocomplete="off"></div><div class="row"><input type="file" id="ex-file" accept="image/*"></div><div class="muted" id="ex-msg" role="status" style="margin-top:8px">${esc(exMsg)}</div>${chips}${EXSCAN?exReview():""}</div>`+examList()+manualCard();
+}
+function examBox(){
+  const t=iso(new Date());
+  const up=ex().filter(x=>x.date>=t);
+  if(!up.length)return "";
+  const d=up.map(x=>x.date).sort()[0];
+  const todays=up.filter(x=>x.date===d).sort(byTime);
+  const ck=(S.xchecks&&S.xchecks[d])||[];
+  const done=ESS.filter(n=>ck.includes(key(n))).length;
+  const when=d===t?" today":d===iso(new Date(Date.now()+864e5))?" tomorrow":" coming up";
+  return `<div class="card"><h2>Exam${esc(when)}</h2><p class="muted">${esc(nice(d))} · ${todays.length} subject${todays.length>1?"s":""}</p><ul>${todays.map(x=>`<li class="li"><span><b>${esc(x.subject)}</b><br><span class="muted">${esc(x.time||"")}${x.room?" · "+(/^\d+$/.test(x.room)?"Room ":"")+esc(x.room):""}</span></span></li>`).join("")}</ul><h3 style="margin-top:14px">Bring for exams · ${done} of ${ESS.length}</h3><ul>${ESS.map(n=>{const on=ck.includes(key(n));return `<li><label class="item ${on?"done":""}"><input type="checkbox" data-xchk="${esc(d)}|${esc(key(n))}" ${on?"checked":""}><span class="n">${esc(n)}</span></label></li>`}).join("")}</ul></div>`;
+}
+const basePack=window.pack;
+window.pack=function(){return examBox()+basePack()};
+window.render=function(focus){
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===S.tab));
+  el.innerHTML=S.tab==="exams"?examsTab():S.tab==="sched"?sched():S.tab==="items"?items():pack();
+  if(focus){const f=document.getElementById(focus);if(f)f.focus()}
+};
+
+function setSection(v,fromInput){
+  S.section=String(v||"").trim();save();
+  try{const p=sb.auth.updateUser({data:{section:S.section}});if(p&&p.catch)p.catch(()=>{})}catch(e){}
+  if(LAST){examFromData();render()}
+  else if(!fromInput)render();
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;const d=t.dataset;
+  if(d.exsec!==undefined){setSection(d.exsec,false)}
+  else if(d.excancel){EXSCAN=null;exMsg="";render()}
+  else if(d.exapply){
+    const date=val("ex-date")||EXDATE||iso(new Date());
+    let n=0;
+    (EXSCAN||[]).forEach((r,i)=>{
+      const on=document.getElementById("exr-"+i+"-on");if(!on||!on.checked)return;
+      const subject=val("exr-"+i+"-subject"),time=val("exr-"+i+"-time"),room=val("exr-"+i+"-room");
+      if(!subject)return;
+      if(!ex().some(x=>x.date===date&&key(x.subject)===key(subject)&&x.time===time)){ex().push({id:Date.now()+"-"+i,date,time,subject,room,teacher:r.teacher||""});n++}
+    });
+    EXSCAN=null;exMsg=n?"Added "+n+" exam"+(n>1?"s":"")+"!":"Nothing new to add.";save();render();
+  }
+  else if(d.exdel){S.exams=ex().filter(x=>String(x.id)!==d.exdel);save();render()}
+  else if(d.exadd){
+    const date=val("ex-md"),time=val("ex-mt"),subject=val("ex-ms"),room=val("ex-mr");
+    if(!date||!subject){exMsg="Please enter the date and the subject.";render();return}
+    ex().push({id:String(Date.now()),date,time,subject,room,teacher:""});
+    exMsg="Exam added!";save();render();
+  }
+});
+document.addEventListener("change",e=>{
+  const id=e.target.id;
+  if(id==="ex-file"){runExam(e.target.files[0]);return}
+  if(id==="ex-section"){setSection(e.target.value,true);return}
+  const x=e.target.dataset&&e.target.dataset.xchk;if(x===undefined)return;
+  const i=x.indexOf("|"),d=x.slice(0,i),k=x.slice(i+1);
+  S.xchecks=S.xchecks||{};
+  const a=S.xchecks[d]||(S.xchecks[d]=[]),j=a.indexOf(k);
+  if(e.target.checked&&j<0)a.push(k);else if(!e.target.checked&&j>=0)a.splice(j,1);
+  save();render();
+});
+
+sb.auth.onAuthStateChange((_e,session)=>{META=(session&&session.user&&session.user.user_metadata)||{}});
+sb.auth.getSession().then(({data})=>{META=(data.session&&data.session.user&&data.session.user.user_metadata)||{}});
+
+window.drawSignUp=function(){
+  box.innerHTML=`<div class="card auth"><h2>Create your account</h2><p class="muted">Fill in your details to get started.</p>
+<input type="text" id="s-name" placeholder="Full name" autocomplete="name">
+<div class="two"><input type="number" id="s-age" placeholder="Age" min="5" max="99"><select id="s-gender"><option value="">Gender</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
+<input type="tel" id="s-phone" placeholder="Mobile number" autocomplete="tel">
+<div class="two"><input type="text" id="s-course" placeholder="Course (e.g. BSIT)"><select id="s-year"><option value="">Year level</option><option>1st year</option><option>2nd year</option><option>3rd year</option><option>4th year</option><option>5th year</option></select></div>
+<input type="text" id="s-section" placeholder="Section (e.g. BSIT-FBT4)" autocomplete="off">
+<input type="email" id="s-email" placeholder="Email" autocomplete="email">
+<input type="password" id="s-pass" placeholder="Password (at least 6 characters)" autocomplete="new-password">
+<input type="password" id="s-pass2" placeholder="Confirm password" autocomplete="new-password">
+<button class="btn" id="s-go">Create Account</button><div class="msg" id="s-msg" role="status"></div>
+<div class="muted">Already have an account? <button class="link" id="go-in">Sign In</button></div></div>`;
+  addEyes();
+  const msg=t=>document.getElementById("s-msg").textContent=t;
+  const v=id=>document.getElementById(id).value.trim();
+  document.getElementById("go-in").onclick=()=>{mode="in";drawSignIn()};
+  document.getElementById("s-go").onclick=async()=>{
+    const full_name=v("s-name"),age=v("s-age"),gender=v("s-gender"),phone=v("s-phone"),course=v("s-course"),year=v("s-year"),section=v("s-section"),email=v("s-email"),password=document.getElementById("s-pass").value;
+    if(!full_name||!age||!gender||!phone||!course||!year||!section||!email)return msg("Please fill in all the fields.");
+    if(password.length<6)return msg("Password must be at least 6 characters.");
+    if(password!==document.getElementById("s-pass2").value)return msg("Passwords do not match.");
+    msg("Creating account…");
+    signingUp=true;
+    const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name,age:Number(age),gender,phone,course,year,section}}});
+    if(error){signingUp=false;return msg(error.message)}
+    const text=data.session?"Account created! Sign in with your email and password.":"Account created! Check your email to confirm, then sign in.";
+    mode="in";flash=text;
+    if(data.session)await sb.auth.signOut();
+    flash=text;signingUp=false;drawSignIn();
+  };
+};
+})();
 </script>
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
