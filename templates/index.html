@@ -842,9 +842,9 @@ OneSignalDeferred.push(async function(OneSignal) {
   const bell=document.getElementById("bell"),msg=document.getElementById("bellmsg");
   const supported=typeof Notification!=="undefined";
   const perm=()=>supported?Notification.permission:"denied";
-  function show(on){
-    bell.style.display=on?"none":"";
-    msg.textContent=on?"🔔 Notifications are on":"";
+    function show(on){
+    bell.parentNode.style.display=on?"none":"";
+    msg.textContent="";
   }
   show(perm()==="granted");
   window.OneSignalDeferred=window.OneSignalDeferred||[];
