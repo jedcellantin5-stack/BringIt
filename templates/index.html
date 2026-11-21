@@ -838,16 +838,63 @@ OneSignalDeferred.push(async function(OneSignal) {
 });
 </script>
 <script>
-document.getElementById("bell").onclick=()=>{
-  const say=t=>document.getElementById("bellmsg").textContent=t;
+(function(){
+  const bell=document.getElementById("bell"),msg=document.getElementById("bellmsg");
+  const supported=typeof Notification!=="undefined";
+  const perm=()=>supported?Notification.permission:"denied";
+  function show(on){
+    bell.style.display=on?"none":"";
+    msg.textContent=on?"🔔 Notifications are on":"";
+  }
+  show(perm()==="granted");
   window.OneSignalDeferred=window.OneSignalDeferred||[];
   OneSignalDeferred.push(async function(OneSignal){
-    try{
-      await OneSignal.Notifications.requestPermission();
-      say(OneSignal.Notifications.permission?"Notifications are on!":"Notifications are off. Allow them in the browser settings.");
-    }catch(e){console.error(e);say("Couldn’t turn on notifications.")}
+    try{OneSignal.Notifications.addEventListener("permissionChange",function(p){show(!!p)})}catch(e){console.error(e)}
   });
-};
+  function enable(){
+    return new Promise(res=>{
+      OneSignalDeferred.push(async function(OneSignal){
+        try{
+          await OneSignal.Notifications.requestPermission();
+          const on=!!OneSignal.Notifications.permission;
+          show(on);
+          if(!on)msg.textContent="Notifications are off. Allow them in the browser settings.";
+          res(on);
+        }catch(e){console.error(e);msg.textContent="Couldn’t turn on notifications.";res(false)}
+      });
+    });
+  }
+  bell.onclick=enable;
+
+  const KEY="bringit_notif_later",WAIT=3*24*3600*1000;
+  const later=()=>{try{const t=+localStorage.getItem(KEY);return !!t&&Date.now()-t<WAIT}catch(e){return false}};
+  let asked=false,timer;
+  function popup(){
+    if(asked||!supported||perm()!=="default"||later()||document.getElementById("notifpop"))return;
+    asked=true;
+    const ov=document.createElement("div");
+    ov.id="notifpop";
+    ov.style.cssText="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.45)";
+    ov.innerHTML='<div role="dialog" aria-modal="true" aria-labelledby="np-t" style="background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:24px;max-width:360px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.25)"><div style="font-size:40px;line-height:1">🔔</div><h2 id="np-t" style="margin:10px 0 6px">Turn on notifications?</h2><p class="muted" style="margin:0 0 16px">Allow notifications so BringIt can remind you what to pack for school.</p><div style="display:flex;flex-direction:column;gap:8px"><button class="btn" id="np-yes">Allow notifications</button><button class="btn ghost" id="np-no">Not now</button></div></div>';
+    document.body.appendChild(ov);
+    const onKey=e=>{if(e.key==="Escape")notNow()};
+    const close=()=>{ov.remove();document.removeEventListener("keydown",onKey)};
+    const notNow=()=>{try{localStorage.setItem(KEY,String(Date.now()))}catch(e){}close()};
+    document.addEventListener("keydown",onKey);
+    document.getElementById("np-yes").onclick=async()=>{close();await enable()};
+    document.getElementById("np-no").onclick=notNow;
+    document.getElementById("np-yes").focus();
+  }
+  function onSession(s){
+    clearTimeout(timer);
+    if(s){timer=setTimeout(popup,1000)}
+    else{const o=document.getElementById("notifpop");if(o)o.remove()}
+  }
+  sb.auth.onAuthStateChange((ev,session)=>{
+    if(ev==="SIGNED_IN"||ev==="INITIAL_SESSION")onSession(session);
+    else if(ev==="SIGNED_OUT")onSession(null);
+  });
+})();
 </script>
 </body>
 </html>
