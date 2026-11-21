@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BringIt – Smart School Checklist</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f4f5f3;--card:#fff;--ink:#2f3b35;--brand:#4a5d54;--on-brand:#fff;--muted:#74807a;--line:#dde2de;--soft:#f6f8f6;--ok:#5f9a7a;--chip:#e6eee9;
+--hd:"Bricolage Grotesque","Trebuchet MS",sans-serif;--bd:"Figtree","Segoe UI",Arial,sans-serif;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131715;--card:#1b211e;--ink:#e5ebe7;--brand:#8fb7a3;--on-brand:#10201a;--muted:#8d9a93;--line:#2c3631;--soft:#161c19;--ok:#7fc29c;--chip:#27332d}}
+:root[data-theme="dark"]{--bg:#131715;--card:#1b211e;--ink:#e5ebe7;--brand:#8fb7a3;--on-brand:#10201a;--muted:#8d9a93;--line:#2c3631;--soft:#161c19;--ok:#7fc29c;--chip:#27332d}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--bd);line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding:28px 16px 64px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.logo{width:46px;height:46px;border-radius:13px;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font:800 22px var(--hd)}
+h1{font:800 32px/1 var(--hd);margin:0;color:var(--brand)}
+.sub{font-size:13px;color:var(--muted)}
+.tag{color:var(--muted);margin:10px 0 20px}
+nav{display:flex;gap:4px;background:var(--chip);padding:4px;border-radius:14px;margin-bottom:16px}
+nav button{flex:1;border:0;background:none;padding:10px;border-radius:10px;font:600 15px var(--bd);color:var(--muted);cursor:pointer}
+nav button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.card{background:var(--card);border-radius:20px;padding:22px;margin-bottom:14px;border:1px solid var(--line)}
+h2{font:700 21px var(--hd);margin:0 0 4px;color:var(--brand)}
+h3{font:700 16px var(--hd);margin:0}
+.muted{color:var(--muted);font-size:14px}
+.days{display:flex;gap:6px;margin:14px 0;overflow-x:auto}
+.days button{flex:1;min-width:58px;padding:9px 6px;border:1px solid var(--line);background:var(--soft);border-radius:12px;font:600 14px var(--bd);color:var(--ink);cursor:pointer}
+.days button[aria-pressed="true"]{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.days small{display:block;font-weight:500;font-size:11px;opacity:.8}
+.bag{display:flex;align-items:center;gap:14px;margin:6px 0 16px}
+.ring{width:64px;height:64px;flex:none}
+.ring circle{fill:none;stroke-width:7}
+.ring .t{stroke:var(--chip)}.ring .p{stroke:var(--ok);stroke-linecap:round;transition:stroke-dashoffset .4s}
+.ring text{font:700 15px var(--hd);fill:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--chip);border-radius:99px;padding:3px 10px;font-size:13px}
+ul{list-style:none;margin:0;padding:0}
+.item{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border-bottom:0}
+.item input{width:22px;height:22px;accent-color:var(--ok);flex:none;cursor:pointer}
+.item .n{flex:1}
+.item.done .n{text-decoration:line-through;color:var(--muted)}
+.src{font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;margin-top:12px}
+input[type=text]{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font:400 15px var(--bd)}
+input[type=file]{width:100%;font:400 14px var(--bd);color:var(--ink)}
+.btn{border:0;background:var(--brand);color:var(--on-brand);padding:0 18px;border-radius:12px;font:600 15px var(--bd);cursor:pointer;min-height:44px}
+.btn.ghost{background:none;color:var(--brand);border:1px solid var(--line)}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 0 0 6px}
+.chip .x{padding:0 0 0 4px;font-size:14px}
+#sync{min-height:18px;margin:-12px 0 14px;font-size:13px;color:var(--muted)}
+.empty{text-align:center;padding:26px 8px;color:var(--muted)}
+.empty .btn{margin-top:12px;padding:0 20px;display:inline-flex;align-items:center}
+.dayblock{padding:14px 0;border-bottom:1px solid var(--line)}.dayblock:last-of-type{border-bottom:0}
+.head{display:flex;justify-content:space-between;align-items:center}
+.li{display:flex;justify-content:space-between;align-items:center;padding:7px 0}
+.auth{display:flex;flex-direction:column;gap:10px}
+.auth input{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font:400 15px var(--bd);width:100%}
+.auth select{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font:400 15px var(--bd);width:100%}
+.auth .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.auth .row{margin-top:0}
+.auth .msg{font-size:13px;min-height:18px;color:var(--muted)}
+.link{background:none;border:0;color:var(--brand);font:600 14px var(--bd);cursor:pointer;text-decoration:underline;padding:0}
+.userbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px;font-size:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.sug{border:1px dashed var(--brand);background:none;color:var(--brand);border-radius:99px;padding:4px 10px;font:500 13px var(--bd);cursor:pointer}
+.sug:hover{background:var(--chip)}
+.sug{border:1px dashed var(--brand);background:none;color:var(--brand);border-radius:99px;padding:5px 11px;font:500 13px var(--bd);cursor:pointer}
+.sug:hover{background:var(--chip)}
+.pick{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--soft);max-height:220px;overflow:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="logo">B</div><div><h1>BringIt</h1><div class="sub">Smart School Checklist</div></div></header>
+  <p class="tag">Add your classes once. Check what to pack the night before.</p>
+  <div id="authbox"></div>
+  <div id="appwrap" style="display:none">
+    <div id="sync" role="status"></div>
+    <nav role="tablist">
+      <button role="tab" data-tab="pack">Pack</button>
+      <button role="tab" data-tab="sched">Schedule</button>
+      <button role="tab" data-tab="items">Items</button>
+    </nav>
+    <main id="app"></main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const sb = window.supabase.createClient("{{ supabase_url }}", "{{ supabase_key }}");
+</script>
+<script>
+const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
+const DEF={programming:["Laptop","Charger","Notebook","Flash drive"],networking:["Laptop","Charger","Notebook","Ethernet cable"],database:["Laptop","Charger","Notebook"],pe:["PE uniform","Rubber shoes","Towel","Extra shirt"],math:["Calculator","Notebook","Pencil"],science:["Lab gown","Calculator","Notebook"],english:["Notebook","Book"],art:["Art supplies","Sketchpad"]};
+const SUG=["Programming","Networking","Database","PE","Math","Science","English","Art"];
+const el=document.getElementById("app");
+let S;
+let SCAN=null,scanMsg="";
+let UID=null,loaded=false,lastSent="",timer;
+function fresh(){const d={};DAYS.forEach(x=>d[x]=[]);return{days:d,subj:{},daily:["School ID","Wallet","Water bottle"],checks:{},stamp:new Date().toDateString(),tab:"pack",sel:null}}
+const KEY=()=>"bringit_"+UID;
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY()));if(r&&r.days)return r}catch(e){}return fresh()}
+function saveLocal(){if(!UID)return;try{localStorage.setItem(KEY(),JSON.stringify(S))}catch(e){}}
+function save(){saveLocal();queueSync()}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const key=s=>s.trim().toLowerCase();
+function nextDay(){let i=(new Date().getDay()+1)%7;return i===0||i===6?"Monday":DAYS[i-1]}
+function todayName(){const i=new Date().getDay();return i>0&&i<6?DAYS[i-1]:null}
+S=fresh();S.sel=nextDay();
+function ensure(name){const k=key(name);if(!S.subj[k])S.subj[k]={name:name.trim(),items:DEF[k]?DEF[k].slice():[]};return k}
+function itemsFor(day){
+  const map=new Map();
+  const add=(n,src)=>{const k=key(n);if(!map.has(k))map.set(k,{n,src:[]});map.get(k).src.push(src)};
+  S.daily.forEach(n=>add(n,"Every day"));
+  S.days[day].forEach(sb=>{const o=S.subj[key(sb)];if(o)o.items.forEach(n=>add(n,o.name))});
+  return [...map.values()];
+}
+function ring(p){const c=2*Math.PI*28;return `<svg class="ring" viewBox="0 0 70 70" aria-hidden="true"><circle class="t" cx="35" cy="35" r="28"/><circle class="p" cx="35" cy="35" r="28" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p)}" transform="rotate(-90 35 35)"/><text x="35" y="40" text-anchor="middle">${Math.round(p*100)}%</text></svg>`}
+function pack(){
+  const day=S.sel,list=itemsFor(day),ck=S.checks[day]||[];
+  const done=list.filter(i=>ck.includes(key(i.n))).length,p=list.length?done/list.length:0;
+  const subs=S.days[day];
+  let h=`<div class="card"><h2>What to bring</h2><div class="days" role="group" aria-label="Choose a day">${DAYS.map(d=>`<button data-day="${d}" aria-pressed="${d===day}">${d.slice(0,3)}<small>${d===nextDay()?"Tomorrow":d===todayName()?"Today":"&nbsp;"}</small></button>`).join("")}</div>`;
+  if(!subs.length){h+=`<div class="empty">No classes set for ${day}.<br><button class="btn" data-tab="sched">Add classes</button></div>`}
+  else{
+    h+=`<div class="bag">${ring(p)}<div><h3>${done===list.length&&list.length?"Bag is ready":done+" of "+list.length+" packed"}</h3><div class="chips">${subs.map(s=>`<span class="chip">${esc(s)}</span>`).join("")}</div></div></div><ul>`;
+    h+=list.map(i=>{const on=ck.includes(key(i.n));return `<li><label class="item ${on?"done":""}"><input type="checkbox" data-chk="${esc(key(i.n))}" ${on?"checked":""}><span class="n">${esc(i.n)}</span><span class="src">${esc(i.src.join(", "))}</span></label></li>`}).join("");
+    h+=`</ul><div class="row"><button class="btn ghost" data-reset="1">Uncheck all</button></div>`;
+  }
+  return h+`</div>`;
+}
+function scanReview(){
+  return `<div class="dayblock"><h3>Check and fix the result</h3><p class="muted">Separate classes with commas. Leave a box empty to skip that day.</p>${DAYS.map(d=>`<div class="row"><label style="width:48px;align-self:center;font-weight:600">${d.slice(0,3)}</label><input type="text" id="sc-${d}" value="${esc((SCAN[d]||[]).join(", "))}"></div>`).join("")}<div class="row"><button class="btn" data-scanapply="1">Add to my schedule</button><button class="btn ghost" data-scancancel="1">Cancel</button></div></div>`;
+}
+function scanCard(){
+  return `<div class="card"><h2>Scan my schedule</h2><p class="muted">Upload a clear picture of your class schedule. It is read on your device and the picture is not uploaded anywhere. It may take a while on an older device.</p><div class="row"><input type="file" id="scan-file" accept="image/*"></div><div class="muted" id="scan-msg" role="status" style="margin-top:8px">${esc(scanMsg)}</div>${SCAN?scanReview():""}</div>`;
+}
+function sched(){
+  let h=scanCard()+`<div class="card"><h2>My Schedule</h2><p class="muted">Add each class for the day. Items for each class are filled in for you.</p>`;
+  h+=DAYS.map(d=>`<div class="dayblock"><div class="head"><h3>${d}</h3>${d==="Monday"&&S.days.Monday.length?`<button class="btn ghost" data-copy="1">Same all week</button>`:""}</div><div class="chips">${S.days[d].map((s,i)=>`<span class="chip">${esc(s)}<button class="x" data-rm="${d}|${i}" aria-label="Remove ${esc(s)}">✕</button></span>`).join("")||`<span class="muted">No classes yet</span>`}</div><div class="row"><input type="text" list="sug" id="in-${d}" placeholder="Add a class, e.g. ${SUG[DAYS.indexOf(d)]}" data-addin="${d}"><button class="btn" data-add="${d}">Add</button></div></div>`).join("");
+  return h+`<datalist id="sug">${SUG.map(s=>`<option value="${s}">`).join("")}</datalist></div>`;
+}
+function items(){
+  const blocks=[["__daily","Every day",S.daily],...Object.keys(S.subj).map(k=>[k,S.subj[k].name,S.subj[k].items])];
+  return `<div class="card"><h2>Items</h2><p class="muted">Edit what each class needs. Changes are saved on this device.</p></div>`+blocks.map(([k,n,arr])=>`<div class="card"><h3>${esc(n)}</h3><ul>${arr.map((x,i)=>`<li class="li"><span>${esc(x)}</span><button class="x" data-ri="${k}|${i}" aria-label="Remove ${esc(x)}">✕</button></li>`).join("")||`<li class="muted">Nothing here yet</li>`}</ul><div class="row"><input type="text" id="it-${k.replace(/\W/g,"_")}" placeholder="Add an item" data-itin="${k}"><button class="btn" data-ai="${k}">Add</button></div></div>`).join("");
+}
+let PICK=null;
+const GEAR=[
+  [/math/,["Calculator","Notebook","Pencil","Ballpen","Eraser","Ruler","Protractor","Compass","Set square","Graphing paper","Math book","Highlighter","Colored pens","Formula sheet"]],
+  [/scien|bio|chem|physics/,["Lab gown","Safety goggles","Gloves","Mask","Calculator","Notebook","Periodic table","Science book","Lab manual","Ruler","Pencil","Colored pencils"]],
+  [/english/,["Notebook","English book","Dictionary","Pen","Reading book","Highlighter","Folder","Sticky notes","Index cards"]],
+  [/filipino/,["Notebook","Filipino book","Dictionary","Pen","Reading book","Highlighter","Folder"]],
+  [/araling|social|history/,["Notebook","AP book","Pen","Map","Atlas","Colored pens","Highlighter","Folder"]],
+  [/mapeh/,["PE uniform","Rubber shoes","Towel","Extra shirt","Water bottle","Art supplies","Colored pencils","Sketchpad","Paintbrush","Watercolor","Music notebook","Recorder","Ukulele"]],
+  [/^pe$|physical/,["PE uniform","Rubber shoes","Towel","Extra shirt","Water bottle","Jump rope","Ball","Sports shorts","Jacket"]],
+  [/tle|livelihood|home ec|technology/,["Apron","Hairnet","Gloves","Safety goggles","Notebook","Tools","Ingredients","Knife set","Measuring cups","Container","Cloth","Pliers","Screwdriver","Needle and thread","Scissors","Glue"]],
+  [/program|coding|computer/,["Laptop","Charger","Notebook","Flash drive","Mouse","Headphones","Extension cord","Power bank","External hard drive"]],
+  [/network/,["Laptop","Charger","Ethernet cable","Crimping tool","LAN tester","RJ45 connectors","Cable stripper","Notebook","Flash drive"]],
+  [/database/,["Laptop","Charger","Notebook","Flash drive","Mouse"]],
+  [/^arts?$/,["Art supplies","Sketchpad","Colored pencils","Paintbrush","Watercolor","Pencil","Eraser","Ruler","Oil pastel","Crayons","Scissors","Glue","Cartolina"]]
+];
+function gearFor(k,name){
+  if(k==="__daily")return ["School ID","Wallet","Water bottle","Umbrella","Raincoat","Face mask","Snacks","Lunch box","Phone","Power bank","Earphones","Handkerchief","Alcohol","Money","Jacket","Keys"];
+  const n=String(name).toLowerCase();
+  for(const [re,list] of GEAR){if(re.test(n))return list}
+  return ["Notebook","Pen","Pencil","Eraser","Ruler","Book","Calculator","Folder","Highlighter","Scissors","Glue","Colored pencils","Bond paper","Index cards"];
+}
+function pickHTML(k,q){
+  if(PICK!==k)return "";
+  const arr=k==="__daily"?S.daily:(S.subj[k]?S.subj[k].items:[]);
+  const have=arr.map(x=>key(x));
+  const name=k==="__daily"?"":(S.subj[k]?S.subj[k].name:"");
+  const ql=(q||"").trim().toLowerCase();
+  const list=gearFor(k,name).filter(x=>!have.includes(key(x))&&(!ql||x.toLowerCase().includes(ql)));
+  return `<div class="pick">${list.length?`<div class="muted">Tap to add</div><div class="chips">${list.map(x=>`<button class="sug" data-pick="${esc(encodeURIComponent(k))}|${esc(encodeURIComponent(x))}">+ ${esc(x)}</button>`).join("")}</div>`:`<div class="muted">No more suggestions. Type your own and press Add.</div>`}</div>`;
+}
+function items(){
+  const blocks=[["__daily","Every day",S.daily],...Object.keys(S.subj).map(k=>[k,S.subj[k].name,S.subj[k].items])];
+  return `<div class="card"><h2>Items</h2><p class="muted">Tap the box to see tools and equipment for each subject, or type your own. Changes are saved on this device.</p></div>`+blocks.map(([k,n,arr])=>{
+    const id=k.replace(/\W/g,"_");
+    return `<div class="card"><h3>${esc(n)}</h3><ul>${arr.map((x,i)=>`<li class="li"><span>${esc(x)}</span><button class="x" data-ri="${k}|${i}" aria-label="Remove ${esc(x)}">✕</button></li>`).join("")||`<li class="muted">Nothing here yet</li>`}</ul><div class="pickzone"><div class="row"><input type="text" id="it-${id}" placeholder="Tap to choose or type an item" data-itin="${esc(k)}" autocomplete="off"><button class="btn" data-ai="${esc(k)}">Add</button></div><div id="pick-${id}">${pickHTML(k,"")}</div></div></div>`;
+  }).join("");
+}
+document.addEventListener("focusin",e=>{
+  const k=e.target.dataset&&e.target.dataset.itin;
+  if(k===undefined||PICK===k)return;
+  PICK=k;render("it-"+k.replace(/\W/g,"_"));
+});
+document.addEventListener("input",e=>{
+  const k=e.target.dataset&&e.target.dataset.itin;
+  if(k===undefined)return;
+  const b=document.getElementById("pick-"+k.replace(/\W/g,"_"));
+  if(b)b.innerHTML=pickHTML(k,e.target.value);
+});
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");
+  if(t&&t.dataset.pick){
+    const p=t.dataset.pick,i=p.indexOf("|");
+    const k=decodeURIComponent(p.slice(0,i)),v=decodeURIComponent(p.slice(i+1));
+    const arr=k==="__daily"?S.daily:(S.subj[k]&&S.subj[k].items);
+    if(arr&&!arr.some(x=>key(x)===key(v)))arr.push(v);
+    PICK=k;save();render();return;
+  }
+  if(PICK!==null&&!e.target.closest(".pickzone")){PICK=null;render()}
+});
+const GEAR2=[
+[/mapeh/,["PE uniform","Rubber shoes","Towel","Extra shirt","Water bottle","Art supplies","Colored pencils","Sketchpad","Paintbrush","Music notebook","Recorder","Ukulele","Health book","Pencil","Ballpen"]],
+[/^p\.?e\.?\s*\d*$|physical education|pathfit|sports|dance|swimming|\bgym\b/,["PE uniform","Rubber shoes","Towel","Extra shirt","Water bottle","Jump rope","Ball","Sports shorts","Jacket","Handkerchief","Sweatband","Knee support","Swimsuit","Cap"]],
+[/nstp|rotc|cwts|\blts\b|military/,["NSTP uniform","Rubber shoes","Water bottle","Towel","Notebook","Pen","Hat","ID","Raincoat","Extra shirt","Snacks","Handkerchief","Gloves"]],
+[/\bmusic\b|choir|\bband\b|instrument|chorus/,["Music notebook","Recorder","Ukulele","Guitar","Staff paper","Pencil","Songbook","Headphones","Harmonica","Keyboard","Drumsticks","Metronome"]],
+[/health|nutrition|first aid/,["Health book","Notebook","Pen","First aid kit","Mask","Alcohol","Hygiene kit","Colored pens","Bandage","Sanitizer"]],
+[/drafting|engineering drawing|architect|technical drawing|\bcad\b/,["T-square","Triangles","Compass","Drawing paper","Mechanical pencil","Eraser","Scale ruler","Masking tape","Drafting board","Laptop","Flash drive","French curve","Pencil","Calculator"]],
+[/network/,["Laptop","Charger","Ethernet cable","Crimping tool","LAN tester","RJ45 connectors","Cable stripper","Notebook","Flash drive","Console cable","Router","Extension cord"]],
+[/database|\bsql\b|data manag|information manag/,["Laptop","Charger","Notebook","Flash drive","Mouse","Headphones","Extension cord","Power bank"]],
+[/program|coding|computer|information tech|\bit\b|\bict\b|data struct|algorithm|\bweb\b|software|cyber|operating|system|informatics|empowerment|multimedia|\bcss\b|animation|graphic/,["Laptop","Charger","Notebook","Flash drive","Mouse","Headphones","Extension cord","Power bank","External hard drive","Pen","Calculator","Reference book","Mouse pad","Stylus"]],
+[/math|algebra|geometry|trigonometry|calculus|statistic|arithmetic|probability|numeracy/,["Calculator","Scientific calculator","Notebook","Pencil","Ballpen","Eraser","Ruler","Protractor","Compass","Set square","Graphing paper","Math book","Highlighter","Colored pens","Formula sheet","Graphing calculator"]],
+[/nursing|\brle\b|medical|med tech|pharma|clinical|anatomy|physiology|radiolog|therapy|dental|midwif|caregiv/,["White uniform","Name tag","Stethoscope","BP apparatus","Thermometer","Watch with second hand","Penlight","Bandage scissors","Gloves","Mask","Alcohol","Notebook","Pen","Nursing book","Hair net","White shoes","Sanitizer","Face shield"]],
+[/science|biolog|chemi|physic|earth|microbio|biochem|laborator|\blab\b|ecology|astronomy/,["Lab gown","Safety goggles","Gloves","Mask","Calculator","Notebook","Periodic table","Science book","Lab manual","Ruler","Pencil","Colored pencils","Microscope slides","Dissecting kit","Hair tie","Closed shoes"]],
+[/filipino|panitikan|komunikasyon|pagbasa|pananaliksik|\bwika\b|pagsulat|mother tongue|\bmtb\b|\bmle\b/,["Notebook","Filipino book","Diksyunaryo","Pen","Reading book","Highlighter","Folder","Bond paper","Index cards","Colored pens"]],
+[/\besp\b|pagpapakatao|values|religion|christian|catechism|theology|ethic|character|guidance|homeroom|\bself\b/,["Notebook","Pen","Bible","Values book","Folder","Colored pens","Journal","Bond paper","Pencil"]],
+[/hospitality|tourism|housekeeping|bartend|front office|travel|food and beverage|f&b/,["Uniform","Name tag","Notebook","Pen","Hairnet","Black shoes","Apron","Towel","Gloves","Tray","Cleaning cloth","Mask","ID","Hair tie","Wine opener"]],
+[/cookery|culinary|baking|bread|pastry|kitchen|food|cooking|tle|livelihood|\bepp\b|home ec/,["Apron","Hairnet","Gloves","Notebook","Ingredients","Knife set","Measuring cups","Measuring spoons","Container","Cloth","Pot holder","Cutting board","Closed shoes","Chef uniform","Hand towel","Scissors","Glue","Pliers","Screwdriver"]],
+[/dress|tailor|sewing|fashion|garment|needle/,["Needle and thread","Scissors","Measuring tape","Pins","Fabric","Chalk","Sewing kit","Pattern paper","Notebook","Thimble","Seam ripper"]],
+[/agri|fishery|garden|farm|crop|animal|horticult/,["Gloves","Boots","Hat","Trowel","Seeds","Water bottle","Notebook","Pen","Apron","Mask","Towel","Extra clothes","Garden tools"]],
+[/carpent|weld|automotive|electric|electronic|plumb|mechanic|machin|industrial|engineering|tools|construction/,["Safety goggles","Gloves","Mask","Tools","Pliers","Screwdriver","Measuring tape","Hammer","Notebook","Pen","Pencil","Closed shoes","Overalls","Multimeter","Soldering iron","Safety shoes","Helmet"]],
+[/account|\babm\b|business|entrepreneur|finance|marketing|management|econom|bookkeep|auditing|taxation|organization|work immersion/,["Calculator","Notebook","Pen","Ledger paper","Highlighter","Laptop","Folder","Ruler","Columnar pad","Textbook","Flash drive","Colored pens","Pencil","Sticky notes","Formal attire"]],
+[/araling|social|history|sibika|hekasi|geograph|politic|civic|government|culture|society|philippine|rizal|contemporary world|philosoph|psycholog|sociolog|anthropolog/,["Notebook","Pen","AP book","History book","Map","Atlas","Colored pens","Highlighter","Folder","Bond paper","Index cards","Laptop"]],
+[/english|literature|reading|writing|communication|speech|oral|grammar|journalism|research|thesis|humanities|\bmedia\b|handwriting|penmanship|spelling|phonics/,["Notebook","English book","Dictionary","Pen","Reading book","Highlighter","Folder","Sticky notes","Index cards","Bond paper","Thesaurus","Laptop","Flash drive"]],
+[/\barts?\b|drawing|painting|sketch|visual|fine arts|appreciation|design/,["Art supplies","Sketchpad","Colored pencils","Paintbrush","Watercolor","Pencil","Eraser","Ruler","Oil pastel","Crayons","Scissors","Glue","Cartolina","Charcoal","Palette","Apron"]],
+[/criminolog|\blaw\b|forensic|police|legal|jurisprudence/,["Notebook","Pen","Codal","Highlighter","Folder","Laptop","Case book","Sticky notes","Index cards","Uniform","ID","Flash drive"]],
+[/teaching|education|field study|practicum|pedagog|curriculum|assessment|child|learner|facilitat/,["Lesson plan","Notebook","Pen","Visual aids","Markers","Folder","Laptop","Flash drive","Bond paper","Scissors","Glue","Colored paper","Name tag","Formal attire","Manila paper","Pointer","Chalk"]]
+];
+function gearFor(k,name){
+  if(k==="__daily")return ["School ID","Wallet","Water bottle","Umbrella","Raincoat","Face mask","Snacks","Lunch box","Phone","Power bank","Earphones","Handkerchief","Alcohol","Money","Jacket","Keys","Medicine","Hair tie"];
+  const n=String(name).toLowerCase();
+  for(const [re,list] of GEAR2){if(re.test(n))return list}
+  return ["Notebook","Pen","Pencil","Eraser","Ruler","Book","Calculator","Folder","Highlighter","Scissors","Glue","Colored pencils","Bond paper","Index cards","Laptop","Flash drive"];
+}
+SUG.length=0;
+SUG.push("Mathematics","Science","English","Filipino","MAPEH","Araling Panlipunan","Edukasyon sa Pagpapakatao","TLE","EPP","Music","Arts","PE","Health","Reading","Writing","Computer","Algebra","Geometry","Trigonometry","Statistics","Pre-Calculus","Basic Calculus","General Math","Biology","Chemistry","Physics","Earth Science","Physical Science","Literature","Oral Communication","Reading and Writing","Practical Research","Empowerment Technologies","Media and Information Literacy","Komunikasyon at Pananaliksik","Pagbasa at Pananaliksik","Contemporary Arts","Entrepreneurship","Work Immersion","Cookery","Bread and Pastry","Food and Beverage","Housekeeping","Dressmaking","Carpentry","Electronics","Electrical Installation","Automotive","Welding","Agriculture","Computer Systems Servicing","Accountancy","Business Math","Organization and Management","Applied Economics","Programming","Data Structures","Algorithms","Networking","Database","Web Development","Systems Analysis","Operating Systems","Software Engineering","Cybersecurity","Discrete Math","Linear Algebra","Calculus","Engineering Drawing","Nursing","Anatomy","Pharmacology","Accounting","Marketing","Economics","Criminology","Teaching","Field Study","Understanding the Self","Readings in Philippine History","Rizal","Art Appreciation","Ethics","Purposive Communication","Science Technology and Society","The Contemporary World","NSTP","PATHFIT");
+function render(focus){
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===S.tab));
+  el.innerHTML=S.tab==="pack"?pack():S.tab==="sched"?sched():items();
+  if(focus){const f=document.getElementById(focus);if(f)f.focus()}
+}
+function addClass(d){const inp=document.getElementById("in-"+d),v=inp.value.trim();if(!v)return;
+  if(S.days[d].some(x=>key(x)===key(v))){inp.value="";return}
+  ensure(v);S.days[d].push(v);save();render("in-"+d)}
+function addItem(k){const id="it-"+k.replace(/\W/g,"_"),v=document.getElementById(id).value.trim();if(!v)return;
+  const arr=k==="__daily"?S.daily:S.subj[k].items;if(!arr.some(x=>key(x)===key(v)))arr.push(v);save();render(id)}
+
+/* ---------- Schedule scanner (Tesseract.js, runs in the browser) ---------- */
+const SKIP=/^(recess|lunch|break|time|vacant|free|vacant period)$/i;
+function lev(a,b){
+  const m=[];
+  for(let i=0;i<=a.length;i++)m[i]=[i];
+  for(let j=1;j<=b.length;j++)m[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)
+    m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return m[a.length][b.length];
+}
+function cleanText(s){
+  return s.replace(/\d{1,2}(:\d{2})?\s*(am|pm)?\s*(-|–|—|to)\s*\d{1,2}(:\d{2})?\s*(am|pm)?/ig," ")
+    .split(/[,;|]/)
+    .map(x=>x.split(/\s+/).filter(w=>!/\d/.test(w)).join(" ").replace(/[^A-Za-z&' -]/g," ").replace(/\s+/g," ").trim())
+    .filter(x=>x.length>=2&&!SKIP.test(x));
+}
+function dayOf(t){
+  const k=String(t).toLowerCase().replace(/[^a-z]/g,"");
+  if(k.length<3)return null;
+  for(const d of DAYS){const f=d.toLowerCase();if(f.startsWith(k)||(k.length>=6&&lev(k,f)<=2))return d}
+  return null;
+}
+function parseSchedule(data){
+  const out={};DAYS.forEach(d=>out[d]=[]);
+  const add=(arr,n)=>{if(!arr.some(x=>x.toLowerCase()===n.toLowerCase()))arr.push(n)};
+  let words=data.words;
+  if(!words&&data.blocks)words=data.blocks.flatMap(b=>b.paragraphs.flatMap(p=>p.lines.flatMap(l=>l.words)));
+  words=(words||[]).filter(w=>w.text&&w.text.trim()&&w.bbox);
+  const cx=w=>(w.bbox.x0+w.bbox.x1)/2,cy=w=>(w.bbox.y0+w.bbox.y1)/2,hh=w=>w.bbox.y1-w.bbox.y0;
+  const heads={};
+  words.forEach(w=>{const d=dayOf(w.text);if(d&&!heads[d])heads[d]=w});
+  const hd=Object.values(heads);
+  if(hd.length>=2){
+    const ys=hd.map(cy);
+    const avgH=hd.reduce((a,w)=>a+hh(w),0)/hd.length;
+    if(Math.max(...ys)-Math.min(...ys)<Math.max(40,avgH*2)){
+      const cols=DAYS.filter(d=>heads[d]).map(d=>({d,x:cx(heads[d])})).sort((a,b)=>a.x-b.x);
+      const gap=(cols[cols.length-1].x-cols[0].x)/(cols.length-1);
+      const top=Math.max(...hd.map(w=>w.bbox.y1));
+      const buckets={};cols.forEach(c=>buckets[c.d]=[]);
+      words.forEach(w=>{
+        if(w.bbox.y0<top-2)return;
+        const x=cx(w);
+        if(x<cols[0].x-gap/2||x>cols[cols.length-1].x+gap/2)return;
+        let best=cols[0];cols.forEach(c=>{if(Math.abs(c.x-x)<Math.abs(best.x-x))best=c});
+        buckets[best.d].push(w);
+      });
+      cols.forEach(c=>{
+        const ws=buckets[c.d].sort((a,b)=>cy(a)-cy(b)||a.bbox.x0-b.bbox.x0);
+        const lines=[];let cur=null;
+        ws.forEach(w=>{
+          if(cur&&Math.abs(cy(w)-cur.cy)<=hh(w)*0.7){cur.ws.push(w);cur.cy=cur.ws.reduce((a,x)=>a+cy(x),0)/cur.ws.length}
+          else{cur={ws:[w],cy:cy(w)};lines.push(cur)}
+        });
+        lines.forEach(l=>{l.ws.sort((a,b)=>a.bbox.x0-b.bbox.x0);l.t=l.ws.map(w=>w.text).join(" ");l.h=l.ws.reduce((a,w)=>a+hh(w),0)/l.ws.length});
+        const merged=[];
+        lines.forEach(l=>{
+          const p=merged[merged.length-1];
+          if(p&&l.cy-p.cy<Math.max(l.h,p.h)*1.7){p.t+=" "+l.t;p.cy=l.cy}
+          else merged.push({t:l.t,cy:l.cy,h:l.h});
+        });
+        merged.forEach(m=>cleanText(m.t).forEach(n=>add(out[c.d],n)));
+      });
+      return out;
+    }
+  }
+  let cur=null;
+  (data.text||"").split("\n").forEach(raw=>{
+    const toks=raw.trim().split(/\s+/);
+    let rest=raw;
+    const first=dayOf(toks[0]||"");
+    if(first){cur=first;rest=toks.slice(1).join(" ")}
+    else if(!cur)return;
+    cleanText(rest).forEach(n=>add(out[cur],n));
+  });
+  return out;
+}
+function prepImage(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{
+      try{
+        const sc=Math.min(3,Math.max(1,2000/img.width));
+        const c=document.createElement("canvas");
+        c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+        const x=c.getContext("2d");
+        x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);
+        x.drawImage(img,0,0,c.width,c.height);
+        const d=x.getImageData(0,0,c.width,c.height),p=d.data;
+        const n=p.length/4,g=new Uint8Array(n),hist=new Array(256).fill(0);
+        for(let i=0;i<n;i++){const v=Math.round(0.299*p[i*4]+0.587*p[i*4+1]+0.114*p[i*4+2]);g[i]=v;hist[v]++}
+        let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];
+        let sB=0,wB=0,max=0,th=128;
+        for(let t=0;t<256;t++){
+          wB+=hist[t];if(!wB)continue;
+          const wF=n-wB;if(!wF)break;
+          sB+=t*hist[t];
+          const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF);
+          if(v>max){max=v;th=t}
+        }
+        th=Math.min(th,155);
+        for(let i=0;i<n;i++){const v=g[i]<th?0:255;p[i*4]=p[i*4+1]=p[i*4+2]=v;p[i*4+3]=255}
+        x.putImageData(d,0,0);
+        URL.revokeObjectURL(url);
+        c.toBlob(b=>b?res(b):rej(new Error("blob")),"image/png");
+      }catch(e){URL.revokeObjectURL(url);rej(e)}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("img"))};
+    img.src=url;
+  });
+}
+async function runScan(file){
+  if(!file)return;
+  const say=t=>{scanMsg=t;const m=document.getElementById("scan-msg");if(m)m.textContent=t};
+  if(!window.Tesseract){say("The reader is still loading. Please try again in a moment.");return}
+  SCAN=null;
+  say("Preparing the picture…");
+  let worker;
+  try{
+    const img=await prepImage(file);
+    say("Starting… the first scan downloads some data, so it can take a bit.");
+    worker=await Tesseract.createWorker("eng",1,{logger:m=>{if(m.status==="recognizing text")say("Reading… "+Math.round(m.progress*100)+"%")}});
+    await worker.setParameters({tessedit_pageseg_mode:"11"});
+    const res=await worker.recognize(img,{},{blocks:true});
+    const parsed=parseSchedule(res.data);
+    const n=DAYS.reduce((a,d)=>a+parsed[d].length,0);
+    if(n){SCAN=parsed;scanMsg="Done! Please check the result below."}
+    else{
+      const raw=(res.data.text||"").replace(/\s+/g," ").trim().slice(0,200);
+      scanMsg="I couldn’t find any classes. What I read: "+(raw||"(nothing)");
+    }
+    render();
+  }catch(e){
+    console.error(e);
+    say("Couldn’t read the picture. Check your internet and try again.");
+  }finally{
+    if(worker){try{await worker.terminate()}catch(_){}}
+  }
+}
+/* ------------------------------------------------------------------------- */
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;const d=t.dataset;
+  if(d.tab){S.tab=d.tab;save();render();window.scrollTo(0,0)}
+  else if(d.day){S.sel=d.day;save();render()}
+  else if(d.reset){S.checks[S.sel]=[];save();render()}
+  else if(d.add)addClass(d.add);
+  else if(d.copy){DAYS.forEach(x=>S.days[x]=S.days.Monday.slice());save();render()}
+  else if(d.rm){const[a,i]=d.rm.split("|");S.days[a].splice(+i,1);save();render()}
+  else if(d.ai)addItem(d.ai);
+  else if(d.ri){const[k,i]=d.ri.split("|");(k==="__daily"?S.daily:S.subj[k].items).splice(+i,1);save();render()}
+  else if(d.scanapply){
+    DAYS.forEach(day=>{
+      const inp=document.getElementById("sc-"+day);if(!inp)return;
+      const list=inp.value.split(",").map(x=>x.trim()).filter(Boolean);
+      if(!list.length)return;
+      S.days[day]=[];
+      list.forEach(n=>{ensure(n);if(!S.days[day].some(x=>key(x)===key(n)))S.days[day].push(n)});
+    });
+    SCAN=null;scanMsg="Schedule updated!";save();render();
+  }
+  else if(d.scancancel){SCAN=null;scanMsg="";render()}
+});
+document.addEventListener("change",e=>{
+  if(e.target.id==="scan-file"){runScan(e.target.files[0]);return}
+  const c=e.target.dataset.chk;if(c===undefined)return;
+  const a=S.checks[S.sel]||(S.checks[S.sel]=[]);const i=a.indexOf(c);
+  if(e.target.checked&&i<0)a.push(c);else if(!e.target.checked&&i>=0)a.splice(i,1);
+  save();render();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter")return;const d=e.target.dataset;
+  if(d.addin)addClass(d.addin);else if(d.itin)addItem(d.itin);
+});
+
+/* ---------- Save and load the schedule in Supabase (per account) ---------- */
+function setSync(t){const s=document.getElementById("sync");if(s)s.textContent=t}
+function queueSync(){
+  if(!UID||!loaded)return;
+  clearTimeout(timer);
+  const uid=UID;
+  timer=setTimeout(async()=>{
+    if(uid!==UID)return;
+    const body=JSON.stringify(S.days);
+    if(body===lastSent)return;
+    setSync("Saving…");
+    const rows=DAYS.map(d=>({user_id:uid,day:d,subjects:S.days[d]}));
+    const {error}=await sb.from("user_schedules").upsert(rows,{onConflict:"user_id,day"});
+    if(uid!==UID)return;
+    if(error){console.error(error);setSync("Couldn’t save online. Your schedule is kept on this device.")}
+    else{lastSent=body;setSync("Schedule saved")}
+  },600);
+}
+async function loadRemote(){
+  const uid=UID;
+  setSync("Loading your schedule…");
+  const {data,error}=await sb.from("user_schedules").select("day,subjects");
+  if(uid!==UID)return;
+  if(error){console.error(error);setSync("Offline. Showing the schedule saved on this device.");return}
+  loaded=true;
+  if(!data||!data.length){
+    setSync("");
+    if(DAYS.some(d=>S.days[d].length))queueSync();
+    return;
+  }
+  data.forEach(r=>{if(S.days[r.day]&&Array.isArray(r.subjects)){S.days[r.day]=r.subjects;r.subjects.forEach(n=>ensure(n))}});
+  lastSent=JSON.stringify(S.days);
+  saveLocal();render();setSync("Schedule loaded from your account");
+}
+function initUser(uid){
+  UID=uid;loaded=false;lastSent="";clearTimeout(timer);
+  SCAN=null;scanMsg="";
+  S=load();
+  if(S.stamp!==new Date().toDateString()){S.checks={};S.stamp=new Date().toDateString()}
+  if(!S.sel||!DAYS.includes(S.sel))S.sel=nextDay();
+  saveLocal();
+  render();
+  loadRemote();
+}
+/* ------------------------------------------------------------------------- */
+
+const box=document.getElementById("authbox");
+let mode="in",flash="",signingUp=false;
+function showAuth(user){
+  if(signingUp&&user)return;
+  document.getElementById("appwrap").style.display=user?"block":"none";
+  if(user){
+    const m=user.user_metadata||{};
+    box.innerHTML=`<div class="userbar"><span>Signed in as <b>${esc(m.full_name||user.email)}</b></span><button class="btn ghost" id="signout">Sign out</button></div>`;
+    document.getElementById("signout").onclick=async()=>{await sb.auth.signOut()};
+    if(UID!==user.id)initUser(user.id);
+    return;
+  }
+  if(UID){UID=null;loaded=false;lastSent="";clearTimeout(timer);S=fresh();S.sel=nextDay();SCAN=null;scanMsg="";setSync("")}
+  mode==="up"?drawSignUp():drawSignIn();
+}
+function addEyes(){
+  box.querySelectorAll('input[type="password"]').forEach(inp=>{
+    const w=document.createElement("div");
+    w.style.cssText="position:relative;width:100%";
+    inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+    inp.style.width="100%";inp.style.paddingRight="48px";
+    const b=document.createElement("button");b.type="button";
+    b.setAttribute("aria-label","Show password");b.textContent="👁️";
+    b.style.cssText="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;cursor:pointer;font-size:18px;line-height:1;padding:8px;min-height:0;width:auto";
+    b.onclick=()=>{
+      const show=inp.type==="password";
+      inp.type=show?"text":"password";
+      b.textContent=show?"🙈":"👁️";
+      b.setAttribute("aria-label",show?"Hide password":"Show password");
+    };
+    w.appendChild(b);
+  });
+}
+function drawSignIn(){
+  box.innerHTML=`<div class="card auth"><h2>Welcome back</h2><p class="muted">Sign in to open your BringIt schedule.</p><input type="email" id="a-email" placeholder="Email" autocomplete="email"><input type="password" id="a-pass" placeholder="Password" autocomplete="current-password"><button class="btn" id="a-in">Sign In</button><div class="msg" id="a-msg" role="status"></div><div class="muted">No account yet? <button class="link" id="go-up">Sign Up</button></div></div>`;
+  addEyes();
+  const msg=t=>document.getElementById("a-msg").textContent=t;
+  if(flash){msg(flash);flash=""}
+  document.getElementById("go-up").onclick=()=>{mode="up";drawSignUp()};
+  const login=async()=>{
+    const email=document.getElementById("a-email").value.trim(),password=document.getElementById("a-pass").value;
+    if(!email||!password)return msg("Please enter your email and password.");
+    msg("Signing in…");
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error)msg(error.message);
+  };
+  document.getElementById("a-in").onclick=login;
+  document.getElementById("a-pass").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+}
+function drawSignUp(){
+  box.innerHTML=`<div class="card auth"><h2>Create your account</h2><p class="muted">Fill in your details to get started.</p>
+<input type="text" id="s-name" placeholder="Full name" autocomplete="name">
+<div class="two"><input type="number" id="s-age" placeholder="Age" min="5" max="99"><select id="s-gender"><option value="">Gender</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
+<input type="tel" id="s-phone" placeholder="Mobile number" autocomplete="tel">
+<div class="two"><input type="text" id="s-course" placeholder="Course (e.g. BSIT)"><select id="s-year"><option value="">Year level</option><option>1st year</option><option>2nd year</option><option>3rd year</option><option>4th year</option><option>5th year</option></select></div>
+<input type="email" id="s-email" placeholder="Email" autocomplete="email">
+<input type="password" id="s-pass" placeholder="Password (at least 6 characters)" autocomplete="new-password">
+<input type="password" id="s-pass2" placeholder="Confirm password" autocomplete="new-password">
+<button class="btn" id="s-go">Create Account</button><div class="msg" id="s-msg" role="status"></div>
+<div class="muted">Already have an account? <button class="link" id="go-in">Sign In</button></div></div>`;
+  addEyes();
+  const msg=t=>document.getElementById("s-msg").textContent=t;
+  const v=id=>document.getElementById(id).value.trim();
+  document.getElementById("go-in").onclick=()=>{mode="in";drawSignIn()};
+  document.getElementById("s-go").onclick=async()=>{
+    const full_name=v("s-name"),age=v("s-age"),gender=v("s-gender"),phone=v("s-phone"),course=v("s-course"),year=v("s-year"),email=v("s-email"),password=document.getElementById("s-pass").value;
+    if(!full_name||!age||!gender||!phone||!course||!year||!email)return msg("Please fill in all the fields.");
+    if(password.length<6)return msg("Password must be at least 6 characters.");
+    if(password!==document.getElementById("s-pass2").value)return msg("Passwords do not match.");
+    msg("Creating account…");
+    signingUp=true;
+    const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name,age:Number(age),gender,phone,course,year}}});
+    if(error){signingUp=false;return msg(error.message)}
+    const text=data.session?"Account created! Sign in with your email and password.":"Account created! Check your email to confirm, then sign in.";
+    mode="in";flash=text;
+    if(data.session)await sb.auth.signOut();
+    flash=text;signingUp=false;drawSignIn();
+  };
+}
+sb.auth.onAuthStateChange((_event,session)=>showAuth(session?session.user:null));
+sb.auth.getSession().then(({data})=>showAuth(data.session?data.session.user:null));
+render();
+</script>
+<script>
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+        appId: "9425e366-760f-43b6-a709-ea6b7f88de92"
+    });
+});
+</script>
+</body>
+</html>
