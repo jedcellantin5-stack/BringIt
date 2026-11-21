@@ -18,10 +18,11 @@ def security_headers(response):
 @app.route("/")
 def home():
     # Only the PUBLIC (publishable) key goes to the browser. Never the secret/service_role key.
-    return render_template(
+       return render_template(
         "index.html",
         supabase_url=os.getenv("SUPABASE_URL"),
         supabase_key=os.getenv("SUPABASE_PUBLISHABLE_KEY"),
+        onesignal_app_id=os.getenv("ONESIGNAL_APP_ID", "9425e366-760f-43b6-a709-ea6b7f88de92"),
     )
 
 

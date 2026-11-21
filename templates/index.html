@@ -85,6 +85,7 @@ input[type=date]{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--lin
   <p class="tag">Add your classes once. Check what to pack the night before.</p>
   <div id="authbox"></div>
   <div id="appwrap" style="display:none">
+  <div class="row" style="margin:0 0 12px"><button class="btn ghost" id="bell">🔔 Enable notifications</button><span class="muted" id="bellmsg" style="align-self:center"></span></div>
     <div id="sync" role="status"></div>
    <nav role="tablist">
       <button role="tab" data-tab="pack">Pack</button>
@@ -832,9 +833,21 @@ window.drawSignUp=function(){
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
-        appId: "9425e366-760f-43b6-a709-ea6b7f88de92"
+          appId: "{{ onesignal_app_id }}"
     });
 });
+</script>
+<script>
+document.getElementById("bell").onclick=()=>{
+  const say=t=>document.getElementById("bellmsg").textContent=t;
+  window.OneSignalDeferred=window.OneSignalDeferred||[];
+  OneSignalDeferred.push(async function(OneSignal){
+    try{
+      await OneSignal.Notifications.requestPermission();
+      say(OneSignal.Notifications.permission?"Notifications are on!":"Notifications are off. Allow them in the browser settings.");
+    }catch(e){console.error(e);say("Couldn’t turn on notifications.")}
+  });
+};
 </script>
 </body>
 </html>
