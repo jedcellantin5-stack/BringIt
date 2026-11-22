@@ -450,7 +450,7 @@ function queueSync(){
     const {error}=await sb.from("user_schedules").upsert(rows,{onConflict:"user_id,day"});
     if(uid!==UID)return;
     if(error){console.error(error);setSync("Couldn’t save online. Your schedule is kept on this device.")}
-    else{lastSent=body;setSync("Schedule saved")}
+    else{lastSent=body;setSync("")}
   },600);
 }
 async function loadRemote(){
@@ -462,8 +462,8 @@ async function loadRemote(){
   loaded=true;
   if(!data||!data.length){
     setSync("");
+    lastSent=JSON.stringify(Object.fromEntries(DAYS.map(d=>[d,[]])));
     if(DAYS.some(d=>S.days[d].length))queueSync();
-    return;
   }
   data.forEach(r=>{if(S.days[r.day]&&Array.isArray(r.subjects)){S.days[r.day]=r.subjects;r.subjects.forEach(n=>ensure(n))}});
   lastSent=JSON.stringify(S.days);
